@@ -1,0 +1,182 @@
+{
+	"info": {
+		"_postman_id": "bbb8ca71-e4ae-4215-8843-8fb2e510c5da",
+		"name": "Java Backend 5 Ktor",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Get All Users",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJcIldlYiB1cmwgaGVyZVwiIiwic3ViIjoie1wiaWRcIjoxLFwiZmlyc3ROYW1lXCI6XCJSb290XCIsXCJsYXN0TmFtZVwiOlwiQWRtaW5pc3RyYXRvclwiLFwiZW1haWxcIjpcInJvb3RAZ21haWwuY29tXCIsXCJyb2xlc1wiOlt7XCJpZFwiOjEsXCJuYW1lXCI6XCJBZG1pbmlzdHJhdG9yXCJ9XX0iLCJpc3MiOiJYQXBwcyIsImV4cCI6MTY3OTM0MzIzNH0.jLn7tJ7vjeU_qpq1g3sYp-LsURAGR5OLUIQl8TxLovg",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/users",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"users"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get User by Id",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJcIldlYiB1cmwgaGVyZVwiIiwic3ViIjoie1wiaWRcIjoxLFwiZmlyc3ROYW1lXCI6XCJSb290XCIsXCJsYXN0TmFtZVwiOlwiQWRtaW5pc3RyYXRvclwiLFwiZW1haWxcIjpcInJvb3RAZ21haWwuY29tXCIsXCJyb2xlc1wiOlt7XCJpZFwiOjEsXCJuYW1lXCI6XCJBZG1pbmlzdHJhdG9yXCJ9XX0iLCJpc3MiOiJYQXBwcyIsImV4cCI6MTY3OTM0MzIzNH0.jLn7tJ7vjeU_qpq1g3sYp-LsURAGR5OLUIQl8TxLovg",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/users/1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"users",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create User",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"test@gmail.com\",\n    \"password\": \"123456\",\n    \"firstName\": \"Test\",\n    \"lastName\": \"Testing\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/users",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"users"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Edit User",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n        \"email\": \"test@gmail.com\",\n        \"password\": \"123456\",\n        \"firstName\": \"Test 22\",\n        \"lastName\": \"Testing 22\"\n    }",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/users/11",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"users",
+						"11"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete User",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/users/10",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"users",
+						"10"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Login",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"email\": \"root@gmail.com\",\r\n    \"password\": \"123456\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/login",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"login"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
