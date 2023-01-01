@@ -7,10 +7,9 @@ REST service to manage users with CRUD operations, using Ktor. This is a simple 
 - Exposed
 - Ktor
 - JWT Authentication and Authorization
+- Dependency Injection using Koin
 - MySQL database
+- Integration tests
 - Postman queries
 - Package scripts (jar and docker image)
 - Docker compose script for deployment
-
-### ToDoS
-- Tests
