@@ -1,0 +1,18 @@
+version: "3.8"
+
+services:
+
+  database:
+    image: mysql:8.0
+    mem_limit: 700m
+    hostname: database
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: users_management
+      MYSQL_ROOT_PASSWORD: root
+    networks:
+      - javabackend5
+
+networks:
+  javabackend5:
