@@ -2,7 +2,6 @@ package org.xapps.services.plugins
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
-import com.fasterxml.jackson.databind.ObjectMapper
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -10,26 +9,33 @@ import io.ktor.server.auth.jwt.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import org.koin.java.KoinJavaComponent.inject
 import org.xapps.services.exceptions.EmailNotAvailable
 import org.xapps.services.exceptions.InvalidCredentialsException
 import org.xapps.services.exceptions.NotFoundException
 import org.xapps.services.models.Authentication
 import org.xapps.services.models.Login
 import org.xapps.services.models.User
+import org.xapps.services.services.RoleService
 import org.xapps.services.services.UserService
-import org.xapps.services.utils.PropertiesProvider
 import java.time.Instant
 import java.util.*
 
 fun Application.configureRouting() {
+    val env = environment
+    val userService by inject<UserService>(UserService::class.java)
+    val roleService by inject<RoleService>(RoleService::class.java)
 
     routing {
-        val objectMapper = ObjectMapper()
 
         fun extractUser(principal: JWTPrincipal): User? {
             return try {
-                objectMapper.readValue(principal.payload.subject, User::class.java)
+                Json.decodeFromString<User>(principal.payload.subject)
             } catch (ex: Exception) {
+                ex.printStackTrace()
                 null
             }
         }
@@ -38,7 +44,7 @@ fun Application.configureRouting() {
             return try {
                 val user = extractUser(principal)
                 if (user != null) {
-                    UserService.instance.isAdministrator(user)
+                    userService.isAdministrator(user)
                 } else {
                     false
                 }
@@ -51,22 +57,33 @@ fun Application.configureRouting() {
             post {
                 try {
                     val login = call.receive<Login>()
-                    val user = UserService.instance.validateLogin(login)
-                    val expiration = Instant.now().toEpochMilli() + PropertiesProvider.instance.securityValidity
+                    val user = userService.validateLogin(login)
+                    val expiration =
+                        Instant.now().toEpochMilli() + env.config.property("security.validity").getString().toLong()
                     val token = JWT.create()
-                        .withAudience(PropertiesProvider.instance.securityAudience)
-                        .withIssuer(PropertiesProvider.instance.securityIssuer)
-                        .withSubject(ObjectMapper().writeValueAsString(user))
+                        .withAudience(env.config.property("security.audience").getString())
+                        .withIssuer(env.config.property("security.issuer").getString())
+                        .withSubject(Json.encodeToString(user))
                         .withExpiresAt(Date(expiration))
-                        .sign(Algorithm.HMAC256(PropertiesProvider.instance.securitySecret))
+                        .sign(Algorithm.HMAC256(env.config.property("security.secret").getString()))
                     val auth = Authentication(
                         token = token,
-                        type = PropertiesProvider.instance.securityTokenType,
+                        type = env.config.property("security.token-type").getString(),
                         expiration = expiration
                     )
-                    call.respond(auth)
+                    call.respond(HttpStatusCode.OK, auth)
                 } catch (ex: InvalidCredentialsException) {
                     call.respond(HttpStatusCode.Unauthorized)
+                } catch (ex: Exception) {
+                    call.respond(HttpStatusCode.InternalServerError, ex.message.toString())
+                }
+            }
+        }
+        route("/roles") {
+            get {
+                try {
+                    val roles = roleService.readAll()
+                    call.respond(HttpStatusCode.OK, roles)
                 } catch (ex: Exception) {
                     call.respond(HttpStatusCode.InternalServerError, ex.message.toString())
                 }
@@ -75,12 +92,11 @@ fun Application.configureRouting() {
         route("/users") {
             authenticate(optional = true) {
                 get {
-                    log.info("GET -> requesting all users")
                     val principal = call.principal<JWTPrincipal>()
                     if (principal != null && isAdministrator(principal)) {
                         try {
-                            val users = UserService.instance.readAll()
-                            call.respond(users)
+                            val users = userService.readAll()
+                            call.respond(HttpStatusCode.OK, users)
                         } catch (ex: Exception) {
                             call.respond(HttpStatusCode.InternalServerError, ex.message.toString())
                         }
@@ -89,14 +105,12 @@ fun Application.configureRouting() {
                     }
                 }
                 get("/{id}") {
-                    log.info("GET -> requesting user with id")
                     val principal = call.principal<JWTPrincipal>()
                     val id = call.parameters["id"]!!.toLong()
-                    log.debug("GET -> requesting user with id $id")
                     if (principal != null && (isAdministrator(principal) || extractUser(principal)?.id == id)) {
                         try {
-                            val user = UserService.instance.read(id)
-                            call.respond(user)
+                            val user = userService.read(id)
+                            call.respond(HttpStatusCode.OK, user)
                         } catch (ex: NotFoundException) {
                             call.respond(HttpStatusCode.NotFound, ex.message.toString())
                         } catch (ex: Exception) {
@@ -107,16 +121,14 @@ fun Application.configureRouting() {
                     }
                 }
                 post {
-                    log.info("POST -> creating user")
                     var user = call.receive<User>()
-                    log.debug("POST creating user $user")
                     val principal = call.principal<JWTPrincipal>()
-                    if ((principal == null && !UserService.instance.hasAdministratorRole(user))
-                        || (principal != null && (isAdministrator(principal)) || !UserService.instance.hasAdministratorRole(user))
+                    if ((principal == null && !userService.hasAdministratorRole(user))
+                        || (principal != null && (isAdministrator(principal)) || !userService.hasAdministratorRole(user))
                     ) {
                         try {
-                            user = UserService.instance.create(user)
-                            call.respond(user)
+                            user = userService.create(user)
+                            call.respond(HttpStatusCode.Created, user)
                         } catch (ex: EmailNotAvailable) {
                             call.respond(HttpStatusCode.Conflict, ex.message.toString())
                         } catch (ex: Exception) {
@@ -127,17 +139,16 @@ fun Application.configureRouting() {
                     }
                 }
                 put("/{id}") {
-                    log.info("PUT -> editing user")
                     val id = call.parameters["id"]!!.toLong()
-                    var user: User = call.receive<User>()
-                    log.debug("PUT -> editing user with id $id and data $user")
+                    val user: User = call.receive<User>()
                     val principal = call.principal<JWTPrincipal>()
                     if (principal != null
                         && (isAdministrator(principal)
-                                || (extractUser(principal)?.id == id && !UserService.instance.hasAdministratorRole(user)))) {
+                                || (extractUser(principal)?.id == id && !userService.hasAdministratorRole(user)))
+                    ) {
                         try {
-                            val editedUser = UserService.instance.update(id, user)
-                            call.respond(editedUser)
+                            val editedUser = userService.update(id, user)
+                            call.respond(HttpStatusCode.OK, editedUser)
                         } catch (ex: NotFoundException) {
                             call.respond(HttpStatusCode.NotFound, ex.message.toString())
                         } catch (ex: EmailNotAvailable) {
@@ -150,13 +161,11 @@ fun Application.configureRouting() {
                     }
                 }
                 delete("/{id}") {
-                    log.info("DELETE -> edleting user")
                     val id = call.parameters["id"]!!.toLong()
-                    log.debug("DELETE -> deleting user with id $id")
                     val principal = call.principal<JWTPrincipal>()
                     if (principal != null && (isAdministrator(principal) || extractUser(principal)?.id == id)) {
                         try {
-                            val success = UserService.instance.delete(id)
+                            val success = userService.delete(id)
                             if (success) {
                                 call.respond(HttpStatusCode.OK)
                             } else {

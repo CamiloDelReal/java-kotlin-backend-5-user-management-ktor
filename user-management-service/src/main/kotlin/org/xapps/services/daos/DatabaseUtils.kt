@@ -1,18 +1,17 @@
 package org.xapps.services.daos
 
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import org.jetbrains.exposed.sql.Database
-import org.xapps.services.utils.PropertiesProvider
+import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 
-class DatabaseUtils {
-    companion object {
-        @JvmStatic
-        val databaseInstance: Database by lazy {
-            Database.connect(
-                url = PropertiesProvider.instance.databaseUrl,
-                driver = PropertiesProvider.instance.databaseDriver,
-                user = PropertiesProvider.instance.databaseUser,
-                password = PropertiesProvider.instance.databasePassword
-            )
-        }
-    }
+object DatabaseUtils {
+
+    suspend fun <T> queryBlock(
+        dispatcher: CoroutineDispatcher,
+        db: Database,
+        block: suspend () -> T
+    ): T =
+        newSuspendedTransaction(Dispatchers.IO) { block() }
+
 }
